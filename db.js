@@ -1,14 +1,14 @@
-const { Pool } = require('pg');
-
-const isProduction = process.env.NODE_ENV === 'production';
+const { Pool } = require('pg');const { Pool } = require('pg');
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
-  ssl: isProduction ? { rejectUnauthorized: false } : false
+  ssl: { rejectUnauthorized: false },
+  max: 3
 });
 
 async function initDb() {
   const client = await pool.connect();
+
   try {
     await client.query(`
       CREATE TABLE IF NOT EXISTS users (
@@ -35,29 +35,23 @@ async function initDb() {
 
     await client.query(`
       CREATE TABLE IF NOT EXISTS "session" (
-        "sid" varchar NOT NULL COLLATE "default",
-        "sess" json NOT NULL,
-        "expire" timestamp(6) NOT NULL
-      )
-      WITH (OIDS=FALSE);
+        sid VARCHAR PRIMARY KEY,
+        sess JSON NOT NULL,
+        expire TIMESTAMP(6) NOT NULL
+      );
     `);
 
     await client.query(`
-      DO $$
-      BEGIN
-        IF NOT EXISTS (
-          SELECT 1 FROM pg_constraint WHERE conname = 'session_pkey'
-        ) THEN
-          ALTER TABLE "session" ADD CONSTRAINT "session_pkey" PRIMARY KEY ("sid") NOT DEFERRABLE INITIALLY IMMEDIATE;
-        END IF;
-      END $$;
+      CREATE INDEX IF NOT EXISTS "IDX_session_expire"
+      ON "session" (expire);
     `);
 
-    await client.query(`
-      CREATE INDEX IF NOT EXISTS "IDX_session_expire" ON "session" ("expire");
-    `);
+  } finally {
+    client.release();
+  }
+}
 
-    console.log('Database tables verified and ready.');
+module.exports = { pool, initDb };
   } finally {
     client.release();
   }

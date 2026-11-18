@@ -1,3 +1,4 @@
+
 const { Pool } = require('pg');
 
 const pool = new Pool({
@@ -46,12 +47,6 @@ async function initDb() {
       ON "session" (expire);
     `);
 
-  } finally {
-    client.release();
-  }
-}
-
-module.exports = { pool, initDb };
   } finally {
     client.release();
   }

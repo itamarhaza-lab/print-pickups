@@ -3,7 +3,6 @@ const express = require('express');
 const session = require('express-session');
 const pgSession = require('connect-pg-simple')(session);
 const bcrypt = require('bcryptjs');
-const path = require('path');
 const { pool, initDb } = require('./db');
 
 const app = express();
@@ -15,7 +14,6 @@ if (isProduction) {
 }
 
 app.use(express.json());
-app.use(express.static(path.join(__dirname, 'public')));
 
 app.use(
   session({
@@ -288,7 +286,7 @@ app.delete('/api/prints/:id', requireModerator, async (req, res) => {
 
 // Fallback to frontend
 app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+  res.sendFile(__dirname + '/public/index.html');
 });
 
 initDb()

@@ -1,1 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Print Pickups — 3D Print Queue & Pickup Tracker</title>
+  <link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+  <!-- Top Navigation -->
+  <header class="navbar">
+    <div class="container nav-inner">
+      <div class="brand">
+        <span class="brand-icon" aria-hidden="true">🧊</span>
+        <span class="brand-title">Print Pickups</span>
+      </div>
+      <div id="userControls" class="user-controls hidden">
+        <div class="user-badge">
+          <span id="navUsername"></span>
+          <span id="navRoleBadge" class="role-badge">User</span>
+        </div>
+        <button id="openModModalBtn" class="btn btn-secondary btn-sm">Moderator Access</button>
+        <button id="logoutBtn" class="btn btn-ghost btn-sm">Sign Out</button>
+      </div>
+    </div>
+  </header>
 
+  <main class="container main-content">
+    <!-- Toast Notification Banner -->
+    <div id="toast" class="toast hidden" role="alert"></div>
+
+    <!-- Loading Screen -->
+    <section id="loadingView" class="center-card">
+      <div class="spinner"></div>
+      <p>Connecting to Print Pickups...</p>
+    </section>
+
+    <!-- Authentication View -->
+    <section id="authView" class="auth-wrapper hidden">
+      <div class="card auth-card">
+        <div class="auth-tabs">
+          <button id="tabLogin" class="auth-tab active" type="button">Sign In</button>
+          <button id="tabRegister" class="auth-tab" type="button">Create Account</button>
+        </div>
+
+        <!-- Login Form -->
+        <form id="loginForm" class="auth-form">
+          <h2>Welcome Back</h2>
+          <p class="subtitle">Sign in to view or add 3D prints in the pickup queue.</p>
+          <div class="form-group">
+            <label for="loginUsername">Username</label>
+            <input type="text" id="loginUsername" required autocomplete="username" placeholder="Enter your username" />
+          </div>
+          <div class="form-group">
+            <label for="loginPassword">Password</label>
+            <input type="password" id="loginPassword" required autocomplete="current-password" placeholder="••••••••" />
+          </div>
+          <button type="submit" class="btn btn-primary btn-block">Sign In</button>
+        </form>
+
+        <!-- Register Form -->
+        <form id="registerForm" class="auth-form hidden">
+          <h2>Create an Account</h2>
+          <p class="subtitle">Accounts start with standard user access. Moderators can unlock tools after signing in.</p>
+          <div class="form-group">
+            <label for="regUsername">Username</label>
+            <input type="text" id="regUsername" required minlength="3" maxlength="30" autocomplete="username" placeholder="3–30 chars (letters, numbers, _ or -)" />
+          </div>
+          <div class="form-group">
+            <label for="regPassword">Password</label>
+            <input type="password" id="regPassword" required minlength="6" autocomplete="new-password" placeholder="At least 6 characters" />
+          </div>
+          <button type="submit" class="btn btn-primary btn-block">Create Account</button>
+        </form>
+      </div>
+    </section>
+
+    <!-- Main Dashboard View -->
+    <section id="dashboardView" class="dashboard hidden">
+      <!-- Moderator Dashboard Banner (Only shown to Moderators) -->
+      <div id="modBanner" class="mod-dashboard card hidden">
+        <div class="mod-dashboard-header">
+          <div>
+            <span class="mod-tag">MODERATOR DASHBOARD</span>
+            <h3>Queue Management Controls Active</h3>
+            <p class="subtitle">You have permanent moderator permissions. You can mark waiting prints as picked up or delete entries.</p>
+          </div>
+          <div class="mod-stats">
+            <div class="stat-box">
+              <span id="statWaiting" class="stat-num">0</span>
+              <span class="stat-label">Waiting</span>
+            </div>
+            <div class="stat-box">
+              <span id="statPickedUp" class="stat-num">0</span>
+              <span class="stat-label">Picked Up</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Add Print Form -->
+      <div class="card add-print-card">
+        <h3>Add a New Print</h3>
+        <form id="addPrintForm" class="add-print-form">
+          <div class="form-row">
+            <div class="form-group flex-2">
+              <label for="printName">Print Name *</label>
+              <input type="text" id="printName" required maxlength="120" placeholder="e.g., Articulated Dragon - Matte Black PLA" />
+            </div>
+            <div class="form-group flex-3">
+              <label for="printDesc">Description / Details (Optional)</label>
+              <input type="text" id="printDesc" maxlength="500" placeholder="e.g., Shelf B2, Printer #3, or owner notes" />
+            </div>
+            <div class="form-group form-submit-group">
+              <button type="submit" class="btn btn-primary">Add Print</button>
+            </div>
+          </div>
+        </form>
+      </div>
+
+      <!-- Queue Tabs & Search -->
+      <div class="queue-controls">
+        <div class="tabs" role="tablist">
+          <button id="waitingTabBtn" class="tab-btn active" role="tab" aria-selected="true">
+            Waiting <span id="waitingCountBadge" class="count-badge">0</span>
+          </button>
+          <button id="pickedUpTabBtn" class="tab-btn" role="tab" aria-selected="false">
+            Picked Up <span id="pickedUpCountBadge" class="count-badge">0</span>
+          </button>
+        </div>
+        <div class="queue-actions">
+          <input type="search" id="searchInput" class="search-input" placeholder="Filter by print name or user..." />
+          <button id="refreshBtn" class="btn btn-secondary btn-sm" title="Refresh prints">Refresh</button>
+        </div>
+      </div>
+
+      <!-- Prints Grid -->
+      <div id="printsGrid" class="prints-grid"></div>
+      <div id="emptyState" class="empty-state card hidden">
+        <p id="emptyStateText">No prints in this list yet.</p>
+      </div>
+    </section>
+  </main>
+
+  <!-- Moderator Activation Modal -->
+  <div id="modModal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="modModalTitle">
+    <div class="card modal-card">
+      <div class="modal-header">
+        <h3 id="modModalTitle">Moderator Activation</h3>
+        <button id="closeModModalBtn" class="icon-close" aria-label="Close">&times;</button>
+      </div>
+      <div id="modModalBody">
+        <p class="subtitle">Enter the secret moderator code to permanently upgrade your account. Once activated, your moderator status will persist across all sessions and devices.</p>
+        <form id="modActivateForm">
+          <div class="form-group">
+            <label for="modCodeInput">Secret Moderator Code</label>
+            <input type="password" id="modCodeInput" required placeholder="Enter moderator code" />
+          </div>
+          <div class="modal-footer">
+            <button type="button" id="cancelModModalBtn" class="btn btn-ghost">Cancel</button>
+            <button type="submit" class="btn btn-primary">Unlock Moderator Role</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <script src="/app.js"></script>
+</body>
+</html>
